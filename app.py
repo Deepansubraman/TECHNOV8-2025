@@ -1,14 +1,13 @@
 import streamlit as st
-import numpy as np
 import cv2
-import tensorflow as tf
+import numpy as np
 from PIL import Image
+import tensorflow as tf
 
-# Load trained model
-MODEL_PATH = "soil_model.h5"  # Ensure this model file exists in the correct location
-model = tf.keras.models.load_model(MODEL_PATH)
+# Load the trained soil model
+model = tf.keras.models.load_model("soil_model.h5")
 
-# Soil type labels
+# Soil Type Mapping
 SOIL_LABELS = {
     0: "Alluvial Soil",
     1: "black Soil",
@@ -16,46 +15,85 @@ SOIL_LABELS = {
     3: "red Soil",
 }
 
-def predict_soil(uploaded_file):
-    """Process the image and predict soil type."""
-    if uploaded_file is not None:
-        try:
-            image = Image.open(uploaded_file)  # Open image
-            img = np.array(image)  # Convert PIL image to NumPy array
-            
-            if img is None or img.size == 0:
-                st.error("Invalid image file. Please upload a valid image.")
-                return None
-            
-            # Convert to OpenCV format
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            img = cv2.resize(img, (128, 128))  # Resize to match model input
-            img = img / 255.0  # Normalize pixel values
-            img = np.expand_dims(img, axis=0)  # Add batch dimension
+# Crop Recommendations (You can expand this based on real data)
+crop_recommendations = {
+    "Black Soil": {
+        "Summer": ["Cotton", "Soybean", "Groundnut"],
+        "Winter": ["Wheat", "Mustard"],
+        "Rainy": ["Rice", "Millets", "Sugarcane"]
+    },
+    "Red Soil": {
+        "Summer": ["Millets", "Pulses"],
+        "Winter": ["Wheat", "Barley"],
+        "Rainy": ["Rice", "Maize"]
+    },
+    "Sandy Soil": {
+        "Summer": ["Watermelon", "Groundnut"],
+        "Winter": ["Mustard", "Carrot"],
+        "Rainy": ["Bajra", "Jowar"]
+    },
+    "Clay Soil": {
+        "Summer": ["Paddy", "Sugarcane"],
+        "Winter": ["Potato", "Peas"],
+        "Rainy": ["Rice", "Jute"]
+    },
+    "Loamy Soil": {
+        "Summer": ["Tomato", "Onion"],
+        "Winter": ["Cabbage", "Cauliflower"],
+        "Rainy": ["Paddy", "Banana"]
+    }
+}
 
-            # Predict soil type
-            predictions = model.predict(img)
-            predicted_class = np.argmax(predictions)  # Get highest probability class
-            
-            return SOIL_LABELS.get(predicted_class, "Unknown Soil Type")
-        
-        except Exception as e:
-            st.error(f"Error processing image: {e}")
-            return None
-    else:
-        st.error("No file uploaded!")
-        return None
+# Function to predict soil type
+def predict_soil(image):
+    img = np.array(image)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.resize(img, (128, 128))
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0)
 
-# Streamlit UI
-st.title("🌱 Soil Type Prediction")
-st.write("Upload an image of soil, and the model will predict its type.")
+    prediction = model.predict(img)
+    predicted_class = np.argmax(prediction)
+    confidence = np.max(prediction) * 100
 
-uploaded_file = st.file_uploader("Choose a soil image...", type=["jpg", "jpeg", "png"])
+    return soil_types[predicted_class], confidence
+
+# ---- UI Design ----
+st.set_page_config(page_title="Soil & Crop Recommendation", page_icon="🌱", layout="wide")
+
+st.sidebar.title("🌾 Crop Recommendation System")
+st.sidebar.write("Upload a soil image and select season & water availability.")
+
+st.title("🌿 Advanced Soil & Crop Recommendation System")
+st.write("Upload a soil image to get the predicted soil type and suitable crops.")
+
+uploaded_file = st.file_uploader("Choose a soil image...", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-    
-    soil_type = predict_soil(uploaded_file)
-    
-    if soil_type:
-        st.success(f"**Predicted Soil Type:** {soil_type}")
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+
+    if st.button("Predict Soil Type"):
+        with st.spinner("Analyzing soil..."):
+            soil_type, confidence = predict_soil(image)
+        
+        st.success(f"**Predicted Soil Type:** {soil_type} ({confidence:.2f}% confidence)")
+
+        # User Inputs for Crop Recommendation
+        season = st.selectbox("Select Season", ["Summer", "Winter", "Rainy"])
+        water_capacity = st.slider("Water Availability (Liters per square meter)", 10, 500, 100)
+
+        # Recommend Crops
+        recommended_crops = crop_recommendations.get(soil_type, {}).get(season, ["No Data Available"])
+        st.subheader("🌾 Recommended Crops")
+        st.write(f"For **{soil_type}** in **{season}**, best crops are:")
+        
+        for crop in recommended_crops:
+            st.markdown(f"- ✅ **{crop}**")
+
+        # Show Water Requirement
+        if water_capacity < 50:
+            st.warning("🚱 Water availability is low! Consider drought-resistant crops.")
+        elif water_capacity > 300:
+            st.info("💧 Water availability is high! You can grow water-intensive crops.")
+

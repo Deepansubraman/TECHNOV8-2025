@@ -1,0 +1,23 @@
+# Ignore system files
+NTUSER.*
+*.regtrans-ms
+*.blf
+*.LOG*
+
+# Ignore personal directories
+AppData/
+OneDrive/
+Saved Games/
+Searches/
+Contacts/
+Videos/
+Music/
+Downloads/
+Favorites/
+Templates/
+
+# Ignore node_modules and other cache files
+node_modules/
+.cache/
+.vscode/
+.arduinoIDE/
