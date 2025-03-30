@@ -8,7 +8,7 @@ import tensorflow as tf
 model = tf.keras.models.load_model("soil_model.h5")
 
 # Soil Type Mapping
-SOIL_LABELS = {
+soil_types= {
     0: "Alluvial Soil",
     1: "black Soil",
     2: "clay Soil",
