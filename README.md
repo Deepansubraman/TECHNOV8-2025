@@ -99,5 +99,5 @@ License
 
 This project is licensed under the MIT License.
 
-For any issues, feel free to create an issue in the GitHub repository or contact the developer at your-email@example.com. 🚀
+For any issues, feel free to create an issue in the GitHub repository or contact the developer at deepandeepan516@gmail.com. 🚀
 
